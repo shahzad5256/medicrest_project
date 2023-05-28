@@ -22,6 +22,7 @@ use Laravel\Socialite\Facades\Socialite;
 use Exception;
 use Session;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 
 class AuthController extends Controller
@@ -424,34 +425,27 @@ class AuthController extends Controller
     }
 
 
+
     public function sendOtp(Request $request)
     {
         $request->validate([
             'phone' => 'required|numeric',
         ]);
-
+    
         $validate = User::where('phone', $request->phone)->first();
-
+    
         if (!empty($validate)) {
             return [
                 'message' => 'error'
             ];
         } else {
             $verificationCode = rand(10000, 99999);
-
-            // Create a new User instance
-            // $user = new User();
-            // $user->phone = $request->phone;
-            // $user->phone_otp = $verificationCode;
-            // $user->save();
-
+    
             $apiKey = urlencode('4Jxj9jYDoks-YqIIfPkMmQMoAlrUW8gosaHtwMaeUC');
             $numbers = array($request->phone);
             $numbers = implode(',', $numbers);
-
             $sender = urlencode('MCREST');
             $message = rawurlencode("Thank you for registering with MediCrest.in. Your OTP Code is $verificationCode. Validate within 15 minutes.");
-
             $data = array('apikey' => $apiKey, 'numbers' => $numbers, 'sender' => $sender, 'message' => $message);
             $ch = curl_init('https://api.textlocal.in/send/');
             curl_setopt($ch, CURLOPT_POST, true);
@@ -463,9 +457,16 @@ class AuthController extends Controller
                 echo "cURL error: " . $error_message;
             }
             curl_close($ch);
-
-            var_dump($response);
-            echo $response;
+    
+            if ($response) {
+                Log::info("OTP sent to {$request->input('phone')}");
+                return response()->json(['message' => 'OTP sent successfully']);
+            } else {
+                $error = "Failed to send OTP to {$request->input('phone')}. Response: $response";
+                Log::error($error);
+                return response()->json(['message' => 'Failed to send OTP'], 500);
+            }
         }
     }
+    
 }
