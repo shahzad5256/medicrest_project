@@ -440,7 +440,18 @@ class AuthController extends Controller
             ];
         } else {
             $verificationCode = rand(10000, 99999);
-    
+          // Create a new User instance
+            $user = new User();
+            if($user->profile_ststus == 0){
+                $user->phone = $request->phone;
+                $user->phone_otp = $verificationCode;
+                $user->save();
+            }else{
+                return response()->json(['message' => 'Account already created'], 500);
+            }
+            $user->phone = $request->phone;
+            $user->phone_otp = $verificationCode;
+            $user->save();
             $apiKey = urlencode('4Jxj9jYDoks-YqIIfPkMmQMoAlrUW8gosaHtwMaeUC');
             $numbers = array($request->phone);
             $numbers = implode(',', $numbers);
